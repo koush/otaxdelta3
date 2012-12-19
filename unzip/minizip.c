@@ -346,8 +346,13 @@ int add_to_zip(zipFile zf, int opt_exclude_path, int opt_compress_level, int opt
                         continue;
                     if (strcmp(ep->d_name, "..") == 0)
                         continue;
+                    
                     sprintf(full_path, "%s/%s", filenameinzip, ep->d_name);
-                    err = add_to_zip(zf, opt_exclude_path, opt_compress_level, opt_recurse, password, buf, size_buf, full_path);
+                    char *dirfilename = full_path;
+                    if (dirfilename[0] == '.' && dirfilename[1] == '/')
+                        dirfilename = dirfilename + 2;
+
+                    err = add_to_zip(zf, opt_exclude_path, opt_compress_level, opt_recurse, password, buf, size_buf, dirfilename);
                     if (err != ZIP_OK) {
                         closedir(dp);
                         return err;

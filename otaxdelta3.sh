@@ -27,7 +27,7 @@ fi
 
 if [ -z "$MKDIR" ]
 then
-  MKDIR="$BB mkdir"
+  MKDIR="mkdir"
 fi
 
 if [ -z "$ZIP" ]
@@ -61,6 +61,22 @@ function realpath {
   echo $PWD/$($BASENAME $1)
 }
 
+function mkdirp {
+  if [ "$1" == "." ]
+  then
+      return
+  fi
+  if [ "$1" == "/" ]
+  then
+      return
+  fi
+  
+  DIR=$($DIRNAME $1)
+  mkdirp $DIR
+  BASE=$($BASENAME $1)
+  $MKDIR $1 2> /dev/null
+}
+
 if [ -z "$4" ]
 then
   usage
@@ -85,12 +101,12 @@ then
   fi
 
   rm -rf $TMP
-  $MKDIR -p $TMP
+  mkdirp $TMP 2> /dev/null
   cd $TMP
 
-  $MKDIR z1
-  $MKDIR z2
-  $MKDIR out
+  mkdirp z1 2> /dev/null
+  mkdirp z2 2> /dev/null
+  mkdirp out 2> /dev/null
 
   cd z1
   $UNZIP -o $Z1
@@ -102,7 +118,7 @@ then
   cd z1
   for f in $($FIND .)
   do
-    $MKDIR -p ../out/$($DIRNAME $f)
+    $MKDIR ../out/$($DIRNAME $f) 2> /dev/null
     EQUIV=../z2/$f
     OUTFILE=../out/$f
 
@@ -130,10 +146,12 @@ else
     rm -f $OUT
 
     rm -rf $TMP
-    $MKDIR -p $TMP
+    mkdirp $TMP 2> /dev/null
     cd $TMP
-    $MKDIR z1
-    $MKDIR z2
+
+    mkdirp z1 2> /dev/null
+    mkdirp z2 2> /dev/null
+    mkdirp out 2> /dev/null
     
     cd z1
     $UNZIP -o $Z1
@@ -144,7 +162,7 @@ else
     do
       if [ -f $f ]
       then
-        $MKDIR -p ../out/$($DIRNAME $f)
+        mkdirp ../out/$($DIRNAME $f) 2> /dev/null
         DELTA=$(echo $f | $GREP \\.delta$)
         if [ ! -z "$DELTA" ]
         then
