@@ -51,8 +51,16 @@ then
 fi
 
 function usage {
+  echo Create delta:
   echo $0 c 1.zip 2.zip diff.zip
+  echo
+  echo Restore from delta:
   echo $0 x 1.zip diff.zip 2.zip
+  echo
+  echo Environment variables of note:
+  echo 'export BB=/path/to/busybox'
+  echo 'export ZIP=/path/to/zip'
+  echo 'export UNZIP=/path/to/unzip'
   exit 1
 }
 
