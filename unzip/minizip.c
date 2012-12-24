@@ -166,13 +166,13 @@ int check_exist_file(filename)
 
 void do_banner()
 {
-    printf("MiniZip 1.1, demo of zLib + MiniZip64 package, written by Gilles Vollant\n");
-    printf("more info on MiniZip at http://www.winimage.com/zLibDll/minizip.html\n\n");
+    fprintf(stderr, "MiniZip 1.1, demo of zLib + MiniZip64 package, written by Gilles Vollant\n");
+    fprintf(stderr, "more info on MiniZip at http://www.winimage.com/zLibDll/minizip.html\n\n");
 }
 
 void do_help()
 {
-    printf("Usage : minizip [-o] [-a] [-0 to -9] [-p password] [-j] file.zip [files_to_add]\n\n" \
+    fprintf(stderr, "Usage : minizip [-o] [-a] [-0 to -9] [-p password] [-j] file.zip [files_to_add]\n\n" \
            "  -r  Recurse directories\n" \
            "  -o  Overwrite existing file.zip\n" \
            "  -a  Append to existing file.zip\n" \
@@ -205,7 +205,7 @@ int getFileCrc(const char* filenameinzip,void*buf,unsigned long size_buf,unsigne
             if (size_read < size_buf)
                 if (feof(fin)==0)
             {
-                printf("error in reading %s\n",filenameinzip);
+                fprintf(stderr, "error in reading %s\n",filenameinzip);
                 err = ZIP_ERRNO;
             }
 
@@ -219,7 +219,7 @@ int getFileCrc(const char* filenameinzip,void*buf,unsigned long size_buf,unsigne
         fclose(fin);
 
     *result_crc=calculate_crc;
-    printf("file %s crc %lx\n", filenameinzip, calculate_crc);
+    fprintf(stderr, "file %s crc %lx\n", filenameinzip, calculate_crc);
     return err;
 }
 
@@ -234,7 +234,7 @@ int isLargeFile(const char* filename)
     int n = FSEEKO_FUNC(pFile, 0, SEEK_END);
     pos = FTELLO_FUNC(pFile);
 
-                printf("File : %s is %lld bytes\n", filename, pos);
+                fprintf(stderr, "File : %s is %lld bytes\n", filename, pos);
 
     if(pos >= 0xffffffff)
      largeFile = 1;
@@ -424,14 +424,14 @@ int add_to_zip(zipFile zf, int opt_exclude_path, int opt_compress_level, int opt
                          password,crcFile, zip64);
 
         if (err != ZIP_OK)
-            printf("error in opening %s in zipfile\n",filenameinzip);
+            fprintf(stderr, "error in opening %s in zipfile\n",filenameinzip);
         else
         {
             fin = FOPEN_FUNC(filenameinzip,"rb");
             if (fin==NULL)
             {
                 err=ZIP_ERRNO;
-                printf("error in opening %s for reading\n",filenameinzip);
+                fprintf(stderr, "error in opening %s for reading\n",filenameinzip);
             }
         }
 
@@ -443,7 +443,7 @@ int add_to_zip(zipFile zf, int opt_exclude_path, int opt_compress_level, int opt
                 if (size_read < size_buf)
                     if (feof(fin)==0)
                 {
-                    printf("error in reading %s\n",filenameinzip);
+                    fprintf(stderr, "error in reading %s\n",filenameinzip);
                     err = ZIP_ERRNO;
                 }
 
@@ -452,7 +452,7 @@ int add_to_zip(zipFile zf, int opt_exclude_path, int opt_compress_level, int opt
                     err = zipWriteInFileInZip (zf,buf,size_read);
                     if (err<0)
                     {
-                        printf("error in writing %s in the zipfile\n",
+                        fprintf(stderr, "error in writing %s in the zipfile\n",
                                          filenameinzip);
                     }
 
@@ -468,7 +468,7 @@ int add_to_zip(zipFile zf, int opt_exclude_path, int opt_compress_level, int opt
         {
             err = zipCloseFileInZip(zf);
             if (err!=ZIP_OK)
-                printf("error in closing %s in the zipfile\n",
+                fprintf(stderr, "error in closing %s in the zipfile\n",
                             filenameinzip);
         }
     }
@@ -492,6 +492,7 @@ int main(argc,argv)
     void* buf=NULL;
     const char* password=NULL;
     int opt_recurse = 0;
+    int opt_stdin = 0;
 
 
     do_banner();
@@ -521,6 +522,8 @@ int main(argc,argv)
                         opt_exclude_path = 1;
                     if ((c=='r') || (c=='R'))
                         opt_recurse = 1;
+                    if (c=='@')
+                        opt_stdin = 1;
 
                     if (((c=='p') || (c=='P')) && (i+1<argc))
                     {
@@ -543,7 +546,7 @@ int main(argc,argv)
     buf = (void*)malloc(size_buf);
     if (buf==NULL)
     {
-        printf("Error allocating memory\n");
+        fprintf(stderr, "Error allocating memory\n");
         return ZIP_INTERNALERROR;
     }
 
@@ -566,8 +569,8 @@ int main(argc,argv)
             if (filename_try[i]=='.')
                 dot_found=1;
 
-        if (dot_found==0)
-            strcat(filename_try,".zip");
+        // if (dot_found==0)
+        //     strcat(filename_try,".zip");
 
         if (opt_overwrite==2)
         {
@@ -584,8 +587,8 @@ int main(argc,argv)
                 {
                     char answer[128];
                     int ret;
-                    printf("The file %s exists. Overwrite ? [y]es, [n]o, [a]ppend : ",filename_try);
-                    ret = scanf("%1s",answer);
+                    fprintf(stderr, "The file %s exists. Overwrite ? [y]es, [n]o, [a]ppend : ",filename_try);
+                    ret = scanf("%1s\n",answer);
                     if (ret != 1)
                     {
                        exit(EXIT_FAILURE);
@@ -616,20 +619,33 @@ int main(argc,argv)
 
         if (zf == NULL)
         {
-            printf("error opening %s\n",filename_try);
+            fprintf(stderr, "error opening %s\n",filename_try);
             err= ZIP_ERRNO;
         }
         else
-            printf("creating %s\n",filename_try);
+            fprintf(stderr, "creating %s\n",filename_try);
 
         for (i=zipfilenamearg+1;(i<argc) && (err==ZIP_OK);i++)
         {
           // int add_to_zip(zipFile zf, int opt_exclude_path, int opt_compress_level, int opt_recurse, char* password, void* buf, int size_buf, char* filenameinzip) {
             err = add_to_zip(zf, opt_exclude_path, opt_compress_level, opt_recurse, password, buf, size_buf, argv[i]);
+            if (err != ZIP_OK)
+                return err;
+        }
+        if (opt_stdin) {
+            char path[PATH_MAX];
+            while (NULL != fgets(path, PATH_MAX, stdin)) {
+                path[strlen(path) - 1] = '\0';
+                if (strlen(path) == 0)
+                    continue;
+                err = add_to_zip(zf, opt_exclude_path, opt_compress_level, opt_recurse, password, buf, size_buf, path);
+                if (err != ZIP_OK)
+                    return err;
+            }
         }
         errclose = zipClose(zf,NULL);
         if (errclose != ZIP_OK)
-            printf("error in closing %s\n",filename_try);
+            fprintf(stderr, "error in closing %s\n",filename_try);
     }
     else
     {
